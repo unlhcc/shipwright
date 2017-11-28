@@ -415,10 +415,13 @@ def switch(rec, show_progress):
         progress = rec.get('progressDetail')
         if progress:
             if show_progress:
-                return '{status} {p[current]}/{p[total]}\r'.format(
+                try:
+                    return '{status} {p[current]}/{p[total]}\r'.format(
                     status=status,
                     p=progress,
-                )
+                    )
+                except KeyError:
+                    pass
             return None
         return status
 
