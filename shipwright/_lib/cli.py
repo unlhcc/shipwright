@@ -313,11 +313,21 @@ def run(path, arguments, client_cfg, environ, new_style_args=None):
         registry_config = parse_registry_logins(registry_logins)
         registries = {}
         for server, config in registry_config.items():
-            registries[server] = drc.BaseClient(
-                config['server'],
-                username=config['username'],
-                password=config['password'],
-                api_version=2,
+            if server == 'docker.io':
+                registries[server] = drc.BaseClient(
+                    'https://registry.hub.docker.com',
+                    username=config['username'],
+                    password=config['password'],
+                    api_version=2,
+                    auth_service_url='https://auth.docker.io',
+                    registry_host='https://registry.docker.io'
+            )
+            else:
+                registries[server] = drc.BaseClient(
+                    config['server'],
+                    username=config['username'],
+                    password=config['password'],
+                    api_version=2,
             )
         the_cache = cache.DirectRegistry(client, registry.Registry(registries))
     elif pull_cache:
