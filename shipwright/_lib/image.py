@@ -7,7 +7,7 @@ from collections import namedtuple
 
 Image = namedtuple(
     'Image',
-    ['name', 'dir_path', 'path', 'parent', 'short_name', 'copy_paths'],
+    ['name', 'dir_path', 'path', 'parent', 'short_name', 'copy_paths', 'extra_tags'],
 )
 
 JSONDecodeError = getattr(json, 'JSONDecodeError', ValueError)
@@ -17,6 +17,7 @@ def list_images(namespace, name_map, root_path):
     images = []
     for path in build_files(root_path):
         name, short_name = image_name(namespace, name_map, root_path, path)
+        extra_tags = add_extra_tags(path)
         images.append(Image(
             name=name,
             short_name=short_name,
@@ -24,8 +25,25 @@ def list_images(namespace, name_map, root_path):
             copy_paths=copy_paths(path),
             path=path,
             parent=parent(path),
+            extra_tags=extra_tags,
         ))
     return images
+
+
+def add_extra_tags(path):
+    """
+    Adds additional tags to an image if a 'TAGS' file is
+    present alongside the Dockerfile. The file format is
+    one tag per line.
+    """
+
+    extra_tags = []
+    dir_path=os.path.dirname(path)
+    if os.path.isfile(os.path.join(dir_path,'TAGS')):
+        with open(os.path.join(dir_path,'TAGS')) as tag_f:
+            for line in tag_f:
+                extra_tags.append(line.strip())
+    return extra_tags
 
 
 def image_name(namespace, name_map, root_path, path):

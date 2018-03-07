@@ -26,7 +26,7 @@ class Shipwright(object):
         for evt in build.do_build(client, ref, targets, self._cache):
             if isinstance(evt, BuildComplete):
                 target = evt.target
-                for tag_evt in self._cache.tag([target], tags):
+                for tag_evt in self._cache.tag([target], tags + target.image.extra_tags):
                     yield tag_evt
             yield evt
 
@@ -46,12 +46,12 @@ class Shipwright(object):
         tags = self.source_control.default_tags() + self.tags + [this_ref_str]
 
         if no_build:
-            for evt in self._cache.push(targets, tags):
+            for evt in self._cache.push(targets, tags + evt.target.image.extra_tags):
                 yield evt
             return
 
         for evt in self._build(this_ref_str, targets):
             if isinstance(evt, BuildComplete):
-                for push_evt in self._cache.push([evt.target], tags):
+                for push_evt in self._cache.push([evt.target], tags + evt.target.image.extra_tags):
                     yield push_evt
             yield evt
