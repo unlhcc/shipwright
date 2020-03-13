@@ -170,6 +170,11 @@ def parse_copy(cmd):
         result = copy_cmd.split(' ')
 
     paths = result[:-1]
+
+    # Ignore COPYs that use previous build stages as the source (--from=X)
+    if copy and any(p.lower().startswith('--from=') for p in paths):
+        return []
+
     if not add:
         return paths
 
