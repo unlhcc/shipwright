@@ -5,11 +5,12 @@ from .msg import BuildComplete
 
 
 class Shipwright(object):
-    def __init__(self, source_control, docker_client, tags, cache):
+    def __init__(self, source_control, docker_client, tags, cache, build_args):
         self.source_control = source_control
         self.docker_client = docker_client
         self.tags = tags
         self._cache = cache
+        self.build_args = build_args
 
     def targets(self):
         return self.source_control.targets()
@@ -23,7 +24,7 @@ class Shipwright(object):
         client = self.docker_client
         ref = this_ref_str
         tags = self.source_control.default_tags() + self.tags + [this_ref_str]
-        for evt in build.do_build(client, ref, targets, self._cache):
+        for evt in build.do_build(client, ref, targets, self._cache, self.build_args):
             if isinstance(evt, BuildComplete):
                 target = evt.target
                 for tag_evt in self._cache.tag([target], tags + target.image.extra_tags):

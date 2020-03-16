@@ -10,7 +10,7 @@ def _merge(d1, d2):
     return d
 
 
-def do_build(client, build_ref, targets, cache):
+def do_build(client, build_ref, targets, cache, build_args):
     """
     Generic function for building multiple images while
     notifying a callback function with output produced.
@@ -31,17 +31,16 @@ def do_build(client, build_ref, targets, cache):
     """
 
     build_index = {t.image.name: t.ref for t in targets}
-
     for target in targets:
         parent_ref = None
         if target.parent:
             parent_ref = build_index.get(target.parent)
-        for evt in build(client, parent_ref, target, cache):
+        for evt in build(client, parent_ref, target, cache, build_args):
             yield evt
         yield BuildComplete(target)
 
 
-def build(client, parent_ref, image, cache):
+def build(client, parent_ref, image, cache, build_args):
     """
     builds the given image tagged with <build_ref> and ensures that
     it depends on it's parent if it's part of this build group (shares
@@ -61,5 +60,5 @@ def build(client, parent_ref, image, cache):
     if image.ref in built_tags:
         return
 
-    for evt in cache.build(parent_ref, image):
+    for evt in cache.build(parent_ref, image, build_args):
         yield process_event_(evt)

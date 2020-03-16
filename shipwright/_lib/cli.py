@@ -151,6 +151,14 @@ def argparser():
         dest='tags',
         help='extra tags to apply to the images',
     )
+    common.add_argument(
+        '-b', '--build-arg',
+        help='Build time variables to pass to docker build. Of the form "key=value". May be passed multiple times.',
+        action='append',
+        const=list,
+        nargs="?",
+        default=None
+    )
 
     subparsers.add_parser(
         'build', help='builds images', parents=[common],
@@ -253,7 +261,7 @@ def process_arguments(path, arguments, client_cfg, environ):
     if tls_config is not None:
         tls_config.assert_hostname = assert_hostname
 
-    client = docker.APIClient(version='1.18', **client_cfg)
+    client = docker.APIClient(version='1.21', **client_cfg)
     commands = ['build', 'push', 'images']
     command_names = [c for c in commands if arguments.get(c)]
     command_name = command_names[0] if command_names else 'build'
@@ -274,6 +282,19 @@ def process_arguments(path, arguments, client_cfg, environ):
 
     return build_targets, no_build, command_name, dump_file, config, client
 
+def process_build_args(buildargs):
+    keys = []
+    vals = []
+    if buildargs:
+        for item in buildargs:
+            (key,val) = item.split('=')
+            keys.append(key)
+            vals.append(val)
+        build_args = dict(zip(keys,vals))
+        return build_args
+    else:
+        return None
+
 
 class SetJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -287,7 +308,6 @@ def run(path, arguments, client_cfg, environ, new_style_args=None):
         path, arguments, client_cfg, environ,
     )
     build_targets, no_build, command_name, dump_file, config, client = args
-
     if new_style_args is None:
         dirty = False
         pull_cache = False
@@ -335,7 +355,9 @@ def run(path, arguments, client_cfg, environ, new_style_args=None):
     else:
         the_cache = cache.NoCache(client)
 
-    sw = Shipwright(scm, client, arguments['tags'], the_cache)
+    build_args = process_build_args(new_style_args.build_arg)
+
+    sw = Shipwright(scm, client, arguments['tags'], the_cache, build_args)
     command = getattr(sw, command_name)
 
     show_progress = sys.stdout.isatty()

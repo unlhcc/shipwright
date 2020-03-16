@@ -65,7 +65,7 @@ class NoCache(object):
         for evt in push.do_push(self.docker_client, sorted(names_and_tags)):
             yield evt
 
-    def build(self, parent_ref, image):
+    def build(self, parent_ref, image, build_args):
         repo = image.name
         tag = image.ref
         client = self.docker_client
@@ -86,7 +86,6 @@ class NoCache(object):
                     yield evt
             except PullFailedException:
                 pass
-
         build_evts = client.build(
             fileobj=tar.mkcontext(parent_ref, image.path),
             rm=True,
@@ -94,6 +93,7 @@ class NoCache(object):
             stream=True,
             tag='{0}:{1}'.format(image.name, image.ref),
             dockerfile=os.path.basename(image.path),
+            buildargs=build_args,
         )
 
         for evt in build_evts:
